@@ -289,32 +289,37 @@ class Table(object):
         :raises: :class:`ValueError <exceptions.ValueError>` if a commit row
                  chunk is never encountered.
         """
-        request_pb = _create_row_request(
-            self.name, row_key=row_key, filter_=filter_,
-            app_profile_id=self._app_profile_id)
-        data_client = self._instance._client.table_data_client
-        if 'read_rows' not in data_client._inner_api_calls:
-            default_retry = data_client._method_configs['ReadRows'].retry
-            timeout = data_client._method_configs['ReadRows'].timeout
-            data_client._inner_api_calls['read_rows'] = \
-                wrap_method(
-                    data_client.transport.read_rows,
-                    default_retry=default_retry,
-                    default_timeout=timeout,
-                    client_info=data_client._client_info,
-                )
-        rows_data = PartialRowsData(
-            data_client._inner_api_calls['read_rows'],
-            request_pb)
+        row_set = RowSet()
+        row_set.add_row_key(row_key)
+        return next(
+            iter(self.read_rows(filter_=filter_, row_set=row_set)), None)
 
-        rows_data.consume_all()
-        if rows_data.state != rows_data.NEW_ROW:
-            raise ValueError('The row remains partial / is not committed.')
+        # request_pb = _create_row_request(
+        #     self.name, row_key=row_key, filter_=filter_,
+        #     app_profile_id=self._app_profile_id)
+        # data_client = self._instance._client.table_data_client
+        # if 'read_rows' not in data_client._inner_api_calls:
+        #     default_retry = data_client._method_configs['ReadRows'].retry
+        #     timeout = data_client._method_configs['ReadRows'].timeout
+        #     data_client._inner_api_calls['read_rows'] = \
+        #         wrap_method(
+        #             data_client.transport.read_rows,
+        #             # default_retry=default_retry,
+        #             # default_timeout=timeout,
+        #             client_info=data_client._client_info,
+        #         )
+        # rows_data = PartialRowsData(
+        #     data_client._inner_api_calls['read_rows'],
+        #     request_pb)
 
-        if len(rows_data.rows) == 0:
-            return None
+        # rows_data.consume_all()
+        # if rows_data.state not in (rows_data.NEW_ROW, rows_data.START):
+        #     raise ValueError('The row remains partial / is not committed.')
 
-        return rows_data.rows[row_key]
+        # if len(rows_data.rows) == 0:
+        #     return None
+
+        # return rows_data.rows[row_key]
 
     def read_rows(self, start_key=None, end_key=None, limit=None,
                   filter_=None, end_inclusive=False, row_set=None):

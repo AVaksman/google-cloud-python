@@ -484,9 +484,18 @@ class TestTable(unittest.TestCase):
         request_pb = object()  # Returned by our mock.
         mock_created = []
 
-        def mock_create_row_request(table_name, row_key, filter_,
-                                    app_profile_id=app_profile_id):
-            mock_created.append((table_name, row_key, filter_, app_profile_id))
+        # def mock_create_row_request(table_name, filter_,
+        #                             row_set, app_profile_id=app_profile_id):
+        #     mock_created.append((table_name, filter_, app_profile_id, row_set))
+        #     return request_pb
+
+        # def mock_create_row_request(table_name, row_key, filter_,
+        #                             app_profile_id=app_profile_id):
+        #     mock_created.append((table_name, row_key, filter_, app_profile_id))
+        #     return request_pb
+
+        def mock_create_row_request(table_name, **kwargs):
+            mock_created.append((table_name, kwargs))
             return request_pb
 
         # Create response_iterator
@@ -500,10 +509,15 @@ class TestTable(unittest.TestCase):
         client._table_data_client = data_api
         client._table_admin_client = table_api
 
-        inner_api_calls = client._table_data_client._inner_api_calls
-        if initialized_read_row:
-            inner_api_calls['read_rows'] = mock.Mock(
-                side_effect=[response_iterator])
+        client._table_data_client.read_rows = mock.Mock(
+            side_effect=[response_pb]
+        )
+
+        # inner_api_calls = client._table_data_client._inner_api_calls
+        # if initialized_read_row:
+        #     inner_api_calls['read_rows'] = mock.Mock(
+        #         side_effect=[response_iterator])
+
 
         # Perform the method and check the result.
         filter_obj = object()
