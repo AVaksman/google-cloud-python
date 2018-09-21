@@ -401,6 +401,7 @@ class PartialRowsData(object):
 
     def _read_next(self):
         """Helper for :meth:`__iter__`."""
+        print('iterator type {}'.format(type(self.response_iterator)))
         return six.next(self.response_iterator)
 
     def _read_next_response(self):

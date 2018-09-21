@@ -291,8 +291,20 @@ class Table(object):
         """
         row_set = RowSet()
         row_set.add_row_key(row_key)
-        return next(
-            iter(self.read_rows(filter_=filter_, row_set=row_set)), None)
+        result = self.read_rows(filter_=filter_, row_set=row_set)
+        print('type {}'.format(type(result)))
+        result_iter = iter(result)
+
+        print('type {}'.format(type(result_iter)))
+        # for row in result:
+        #     return row
+        # result_iter = iter(self.read_rows(filter_=filter_, row_set=row_set))
+
+        # print('type {}'.format(type(result_iter)))
+        row = next(result_iter, None)
+        if next(result_iter, None) is not None:
+            raise ValueError('More than one row was returned.')
+        return row
 
         # request_pb = _create_row_request(
         #     self.name, row_key=row_key, filter_=filter_,

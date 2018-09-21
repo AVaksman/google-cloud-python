@@ -49,6 +49,7 @@ def default(session):
         '--cov-config=.coveragerc',
         '--cov-report=',
         '--cov-fail-under=97',
+        '--disable-warnings',
         'tests/unit',
         *session.posargs
     )
