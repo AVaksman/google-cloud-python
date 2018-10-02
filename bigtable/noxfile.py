@@ -113,23 +113,23 @@ def snippets(session, py):
 @nox.session(python='3.6')
 def lint(session):
     """Run linters.
- 
+
     Returns a failure if the linters find linting errors or sufficiently
     serious code quality issues.
     """
     session.install('flake8', *LOCAL_DEPS)
     session.install('.')
     session.run('flake8', 'google', 'tests')
- 
- 
+
+
 @nox.session
 def lint_setup_py(session):
     """Verify that setup.py is valid (including RST check)."""
     session.interpreter = 'python3.6'
- 
+
     # Set the virtualenv dirname.
     session.virtualenv_dirname = 'setup'
- 
+
     session.install('docutils', 'Pygments')
     session.run(
         'python', 'setup.py', 'check', '--restructuredtext', '--strict')
@@ -138,7 +138,7 @@ def lint_setup_py(session):
 @nox.session(python='3.6')
 def cover(session):
     """Run the final coverage report.
- 
+
     This outputs the coverage report aggregating coverage from the unit
     test runs (not system test runs), and then erases coverage data.
     """
