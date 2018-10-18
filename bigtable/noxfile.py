@@ -83,9 +83,8 @@ def system(session):
 
 #@nox.parametrize('py', ['2.7', '3.6'])
 
-@nox.session
-@nox.parametrize('py', ['2.7'])
-def snippets(session, py):
+@nox.session(python=['3.6'])
+def snippets(session):
     """Run the system test suite."""
 
     # Sanity check: Only run system tests if the environment variable is set.
@@ -93,21 +92,24 @@ def snippets(session, py):
         session.skip('Credentials must be set via environment variable.')
 
     # Run the system tests against latest Python 2 and Python 3 only.
-    session.interpreter = 'python{}'.format(py)
+    # session.interpreter = 'python{}'.format(py)
+
+    # Use pre-release gRPC for system tests.
+    session.install('--pre', 'grpcio')
 
     # Set the virtualenv dirname.
-    session.virtualenv_dirname = 'snip-' + py
+    # session.virtualenv_dirname = 'snip-' + py
 
     # Install all test dependencies, then install local packages in place.
     session.install('mock', 'pytest')
     for local_dep in LOCAL_DEPS:
         session.install('-e', local_dep)
-    session.install('-e', os.path.join('..', 'bigtable'))
+    # session.install('-e', os.path.join('..', 'bigtable'))
+    session.install('-e', '../test_utils/')    
     session.install('-e', '.')
 
     # Run py.test against the system tests.
-    session.run('py.test', os.path.join('../docs/bigtable', \
-                                        'snippets.py'), *session.posargs)
+    session.run('py.test', '--quiet', '../docs/bigtable/snippets.py', *session.posargs)
 
 
 

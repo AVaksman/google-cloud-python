@@ -35,25 +35,26 @@ from google.cloud import bigtable
 
 INSTANCE_ID = "instance-snippet"
 CLUSTER_ID = "cluster-snippet"
-CLUSTER_ID1 = "ssd-cluster-1"
+CLUSTER_ID1 = "ssd-cluster-2"
 
 
 @pytest.fixture(scope='module')
 def client():
-    return bigtable.Client(project='grass-clump-479', admin=True)
+    return bigtable.client.Client(admin=True)
 
 
 @pytest.fixture
 def to_delete():
     doomed = []
-    yield doomed
-    for item in doomed:
-        item.delete()
+#     yield doomed
+#     for item in doomed:
+#         item.delete()
 
 
 @pytest.mark.order1
 def test_bigtable_create_instance(client, to_delete):
     # [START bigtable_create_prod_instance]
+    from google.cloud.bigtable import Client
     from google.cloud.bigtable import enums
 
     location_id = 'us-central1-f'
@@ -62,24 +63,37 @@ def test_bigtable_create_instance(client, to_delete):
     production = enums.Instance.Type.PRODUCTION
     labels = {'prod-label': 'prod-label'}
 
+    print("creating a client")
+    client = Client(admin=True)
     instance = client.instance(INSTANCE_ID, instance_type=production,
                                labels=labels)
     cluster = instance.cluster(CLUSTER_ID1, location_id=location_id,
                                serve_nodes=serve_nodes,
                                default_storage_type=storage_type)
-    instance.create(clusters=[cluster])
+    operation = instance.create(clusters=[cluster])
+    # We want to make sure the operation completes.
+    operation.result(timeout=20)
+
+    print(instance.exists())
+
     # [END bigtable_create_prod_instance]
 
-    assert instance is not None
-    to_delete.append(instance)
+    instance2 = client.instance(INSTANCE_ID)
+    assert instance2.exists()
+    # to_delete.append(instance)
 
 
 @pytest.mark.order2
-def test_bigtable_create_cluster(client):
+def test_bigtable_create_additional_cluster(client):
     # [START bigtable_create_cluster]
+    from google.cloud.bigtable import Client
     from google.cloud.bigtable import enums
-
+    
+    # Assuming that there is an existing instance with `INSTANCE_ID` on the server already.
+    # to create an instance see 'link'
+    client = Client(admin=True)
     instance = client.instance(INSTANCE_ID)
+
     location_id = 'us-central1-a'
     serve_nodes = 3
     storage_type = enums.StorageType.SSD
@@ -87,111 +101,114 @@ def test_bigtable_create_cluster(client):
     cluster = instance.cluster(CLUSTER_ID, location_id=location_id,
                                serve_nodes=serve_nodes,
                                default_storage_type=storage_type)
-    cluster.create()
+    operation = cluster.create()
+    # We want to make sure the operation completes.
+    operation.result(timeout=10)
     # [END bigtable_create_cluster]
-    assert cluster is not None
+    cluster2 = instance.cluster(CLUSTER_ID)
+    assert cluster2.exists()
 
 
-@pytest.mark.order3
-def test_bigtable_list_instances(client):
-    # [START bigtable_list_instances]
-    (instances_list, failed_locations_list) = client.list_instances()
-    # [END bigtable_list_instances]
+# @pytest.mark.order3
+# def test_bigtable_list_instances(client):
+#     # [START bigtable_list_instances]
+#     (instances_list, failed_locations_list) = client.list_instances()
+#     # [END bigtable_list_instances]
 
-    assert instances_list.__len__() is not 0
-
-
-@pytest.mark.order4
-def test_bigtable_list_clusters(client):
-    # [START bigtable_list_clusters]
-    instance = client.instance(INSTANCE_ID)
-    (clusters_list, failed_locations_list) = instance.list_clusters()
-    # [END bigtable_list_clusters]
-
-    assert clusters_list.__len__() is not 0
+#     assert instances_list.__len__() is not 0
 
 
-@pytest.mark.order5
-def test_bigtable_instance_exists(client):
-    # [START bigtable_check_instance_exists]
-    instance = client.instance(INSTANCE_ID)
-    instance_exists = instance.exists()
-    # [END bigtable_check_instance_exists]
-    assert instance_exists
+# @pytest.mark.order4
+# def test_bigtable_list_clusters(client):
+#     # [START bigtable_list_clusters]
+#     instance = client.instance(INSTANCE_ID)
+#     (clusters_list, failed_locations_list) = instance.list_clusters()
+#     # [END bigtable_list_clusters]
+
+#     assert clusters_list.__len__() is not 0
 
 
-@pytest.mark.order6
-def test_bigtable_cluster_exists(client):
-    # [START bigtable_check_cluster_exists]
-    instance = client.instance(INSTANCE_ID)
-    cluster = instance.cluster(CLUSTER_ID1)
-    cluster_exists = cluster.exists()
-    # [END bigtable_check_cluster_exists]
-    assert cluster_exists
+# @pytest.mark.order5
+# def test_bigtable_instance_exists(client):
+#     # [START bigtable_check_instance_exists]
+#     instance = client.instance(INSTANCE_ID)
+#     instance_exists = instance.exists()
+#     # [END bigtable_check_instance_exists]
+#     assert instance_exists
 
 
-@pytest.mark.order7
-def test_bigtable_reload_cluster(client):
-    # [START bigtable_reload_cluster]
-    instance = client.instance(INSTANCE_ID)
-    cluster = instance.cluster(CLUSTER_ID1)
-    cluster.reload()
-    # [END bigtable_reload_cluster]
-    assert cluster is not None
+# @pytest.mark.order6
+# def test_bigtable_cluster_exists(client):
+#     # [START bigtable_check_cluster_exists]
+#     instance = client.instance(INSTANCE_ID)
+#     cluster = instance.cluster(CLUSTER_ID1)
+#     cluster_exists = cluster.exists()
+#     # [END bigtable_check_cluster_exists]
+#     assert cluster_exists
 
 
-@pytest.mark.order8
-def test_bigtable_update_cluster(client):
-    # [START bigtable_update_cluster]
-    instance = client.instance(INSTANCE_ID)
-    cluster = instance.cluster(CLUSTER_ID1)
-    cluster.serve_nodes = 8
-    cluster.update()
-    # [END bigtable_update_cluster]
-    assert cluster is not None
+# @pytest.mark.order7
+# def test_bigtable_reload_cluster(client):
+#     # [START bigtable_reload_cluster]
+#     instance = client.instance(INSTANCE_ID)
+#     cluster = instance.cluster(CLUSTER_ID1)
+#     cluster.reload()
+#     # [END bigtable_reload_cluster]
+#     assert cluster is not None
 
 
-@pytest.mark.order9
-def test_bigtable_create_table(client):
-    # [START bigtable_create_table]
-    from google.cloud.bigtable import column_family
-
-    instance = client.instance(INSTANCE_ID)
-    table = instance.table("table_my")
-    # Define the GC policy to retain only the most recent 2 versions.
-    max_versions_rule = column_family.MaxVersionsGCRule(2)
-    column_families = {'cf1': max_versions_rule}
-    table.create(column_families=column_families)
-    # [END bigtable_create_table]
-    assert table is not None
+# @pytest.mark.order8
+# def test_bigtable_update_cluster(client):
+#     # [START bigtable_update_cluster]
+#     instance = client.instance(INSTANCE_ID)
+#     cluster = instance.cluster(CLUSTER_ID1)
+#     cluster.serve_nodes = 8
+#     cluster.update()
+#     # [END bigtable_update_cluster]
+#     assert cluster is not None
 
 
-@pytest.mark.order10
-def test_bigtable_list_tables(client):
-    # [START bigtable_list_tables]
-    instance = client.instance(INSTANCE_ID)
-    tables_list = instance.list_tables()
-    # [END bigtable_list_tables]
-    assert tables_list.__len__() is not 0
+# @pytest.mark.order9
+# def test_bigtable_create_table(client):
+#     # [START bigtable_create_table]
+#     from google.cloud.bigtable import column_family
+
+#     instance = client.instance(INSTANCE_ID)
+#     table = instance.table("table_my")
+#     # Define the GC policy to retain only the most recent 2 versions.
+#     max_versions_rule = column_family.MaxVersionsGCRule(2)
+#     column_families = {'cf1': max_versions_rule}
+#     table.create(column_families=column_families)
+#     # [END bigtable_create_table]
+#     assert table is not None
 
 
-@pytest.mark.order11
-def test_bigtable_delete_cluster(client):
-    # [START bigtable_delete_cluster]
-    instance = client.instance(INSTANCE_ID)
-    cluster = instance.cluster(CLUSTER_ID1)
-    cluster.delete()
-    # [END bigtable_delete_cluster]
-    assert cluster is None
+# @pytest.mark.order10
+# def test_bigtable_list_tables(client):
+#     # [START bigtable_list_tables]
+#     instance = client.instance(INSTANCE_ID)
+#     tables_list = instance.list_tables()
+#     # [END bigtable_list_tables]
+#     assert tables_list.__len__() is not 0
 
 
-@pytest.mark.order12
-def test_bigtable_delete_instance(client):
-    # [START bigtable_delete_instance]
-    instance = client.instance(INSTANCE_ID)
-    instance.delete()
-    # [END bigtable_delete_instance]
-    assert instance is None
+# @pytest.mark.order11
+# def test_bigtable_delete_cluster(client):
+#     # [START bigtable_delete_cluster]
+#     instance = client.instance(INSTANCE_ID)
+#     cluster = instance.cluster(CLUSTER_ID1)
+#     cluster.delete()
+#     # [END bigtable_delete_cluster]
+#     assert cluster is None
+
+
+# @pytest.mark.order12
+# def test_bigtable_delete_instance(client):
+#     # [START bigtable_delete_instance]
+#     instance = client.instance(INSTANCE_ID)
+#     instance.delete()
+#     # [END bigtable_delete_instance]
+#     assert instance is None
 
 
 if __name__ == '__main__':
